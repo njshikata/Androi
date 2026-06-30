@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.LottieAnimation
@@ -21,40 +22,39 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(isOnline: Boolean = true) { // 👉 Nhận trạng thái mạng
     // Load file json từ res/raw
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.ghibli_tribute))
 
-    // Dùng Column để xếp dọc Animation ở trên, Chữ ở dưới
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center, // Căn giữa toàn màn hình theo chiều dọc
-        horizontalAlignment = Alignment.CenterHorizontally // Căn giữa theo chiều ngang
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Animation Lottie
         LottieAnimation(
             composition = composition,
             iterations = LottieConstants.IterateForever,
-            modifier = Modifier.size(250.dp) // Thêm size để khống chế kích thước Lottie nếu nó quá to
+            modifier = Modifier.size(250.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp)) // Tạo khoảng trống giữa hình và chữ
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Chữ thông báo chính
+        // 👉 HIỂN THỊ TEXT THEO TRẠNG THÁI MẠNG
         Text(
-            text = "Đang tải dữ liệu...",
+            text = if (isOnline) "Đang tải dữ liệu..." else "Không có mạng!",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = if (isOnline) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(8.dp)) // Khoảng trống nhỏ
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // 3. Chữ thông báo phụ (xin chờ)
         Text(
-            text = "Vui lòng chờ trong giây lát",
+            text = if (isOnline) "Vui lòng chờ trong giây lát" else "Đang chuyển đến tủ sách offline...",
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }

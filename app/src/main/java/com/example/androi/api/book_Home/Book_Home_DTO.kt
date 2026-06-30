@@ -10,5 +10,6 @@ data class Book_Home_Dto(
     @SerializedName("status") val status: String?,           // Enum hứng bằng String
     @SerializedName("totalChapters") val totalChapters: Int?,
     @SerializedName("viewCount") val viewCount: Long?,
-    @SerializedName("updatedAt") val updatedAt: String?      // Dùng String hứng LocalDateTime
+    @SerializedName("updatedAt") val updatedAt: String?,      // Dùng String hứng LocalDateTime
+    @SerializedName("averageRating") val averageRating: Double? = 0.0
 )

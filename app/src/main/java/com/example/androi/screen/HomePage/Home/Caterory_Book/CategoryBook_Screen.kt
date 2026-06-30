@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -30,6 +31,7 @@ fun CategoryBook_Screen(
     initialCategoryId: Int,
     initialCategoryName: String
 ) {
+    val context = LocalContext.current
     var categoryList by remember { mutableStateOf<List<CateroryDTO>>(emptyList()) }
     var bookList by remember { mutableStateOf<List<Book_Home_Dto>>(emptyList()) }
 
@@ -38,7 +40,8 @@ fun CategoryBook_Screen(
 
     LaunchedEffect(Unit) {
         try {
-            categoryList = api_tong.cateroryApi.getCategories()
+            // 👉 2. SỬA THÀNH getCateroryApi(context)
+            categoryList = api_tong.getCateroryApi(context).getCategories()
         } catch (e: Exception) {
             println("Lỗi tải danh sách thể loại: ${e.message}")
         }
@@ -47,7 +50,8 @@ fun CategoryBook_Screen(
     LaunchedEffect(currentCategoryId) {
         try {
             bookList = emptyList()
-            bookList = api_tong.bookHomeApi.getBooksByCategory(currentCategoryId)
+            // 👉 3. SỬA THÀNH getBookHomeApi(context)
+            bookList = api_tong.getBookHomeApi(context).getBooksByCategory(currentCategoryId)
         } catch (e: Exception) {
             println("Lỗi tải truyện: ${e.message}")
         }

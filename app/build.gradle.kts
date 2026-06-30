@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // Đã xóa kotlin("kapt") và thay bằng ksp:
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -81,5 +82,7 @@ dependencies {
 
     // Đã thay kapt bằng ksp ở đây:
     ksp("androidx.room:room-compiler:$room_version")
+
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 }
 

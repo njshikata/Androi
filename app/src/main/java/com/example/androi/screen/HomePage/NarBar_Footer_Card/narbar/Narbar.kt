@@ -1,6 +1,8 @@
 package com.example.androi.screen.HomePage.NarBar_Footer_Card.narbar
 
 import android.content.Context
+// 👉 Đã bổ sung import background ở đây
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -20,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+// 👉 BẮT BUỘC IMPORT CÁI NÀY
+import androidx.navigation.NavController
 import com.example.androi.SQL.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,15 +35,20 @@ import java.util.Locale
 @Composable
 fun Narbar(
     title: String = "Book Sagari",
+    navController: NavController? = null,
     onBackClick: (() -> Unit)? = null,
     onMenuClick: () -> Unit = {},
-    onSearchAction: (String) -> Unit = {}
+    onSearchAction: (String) -> Unit = {},
+    onLoginClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val database = remember { AppDatabase.getDatabase(context) }
 
-    // Đọc trạng thái từ Room tự động cập nhật UI (Flow)
+    val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+    val token = appPrefs.getString("ACCESS_TOKEN", null)
+    val isLoggedIn = !token.isNullOrEmpty()
+
     val notifications by database.notificationDao().getAllNotifications().collectAsState(initial = emptyList())
     val unreadCount by database.notificationDao().getUnreadCount().collectAsState(initial = 0)
 
@@ -48,12 +57,10 @@ fun Narbar(
     var isSearchMode by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // States cho các Menu
     var showNotificationMenu by remember { mutableStateOf(false) }
-    var showMoreMenu by remember { mutableStateOf(false) } // Dành cho nút 3 chấm
-    var showThemeDialog by remember { mutableStateOf(false) } // Dành cho bảng chọn giao diện
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
-    // Lấy SharedPreferences để lưu cấu hình giao diện
     val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     var selectedTheme by remember { mutableStateOf(prefs.getString("theme_mode", "LIGHT") ?: "LIGHT") }
 
@@ -66,12 +73,16 @@ fun Narbar(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     singleLine = true,
+                    // 👉 Dùng màu chữ động
                     textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onPrimaryContainer),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimaryContainer),
                     modifier = Modifier.fillMaxWidth(),
                     decorationBox = { innerTextField ->
-                        Box(contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
-                            if (searchQuery.isEmpty()) Text("Nhập tên truyện...", color = Color.Gray, fontSize = 16.sp)
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (searchQuery.isEmpty()) {
+                                // 👉 Dùng màu chữ mờ động
+                                Text("Nhập tên truyện...", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f), fontSize = 16.sp)
+                            }
                             innerTextField()
                         }
                     },
@@ -91,7 +102,11 @@ fun Narbar(
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         )
     } else {
         TopAppBar(
@@ -106,12 +121,16 @@ fun Narbar(
                 }
             },
             actions = {
-                // Nút Tìm kiếm
                 IconButton(onClick = { isSearchMode = true }) {
                     Icon(imageVector = Icons.Filled.Search, contentDescription = "Tìm kiếm")
                 }
 
-                // Nút Chuông thông báo
+                if (!isLoggedIn) {
+                    IconButton(onClick = onLoginClick) {
+                        Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = "Đăng nhập")
+                    }
+                }
+
                 Box {
                     IconButton(onClick = {
                         showNotificationMenu = !showNotificationMenu
@@ -130,14 +149,15 @@ fun Narbar(
                         }
                     }
 
+                    // 👉 Sửa màu nền và chữ của Dropdown Menu Thông báo
                     DropdownMenu(
                         expanded = showNotificationMenu,
                         onDismissRequest = { showNotificationMenu = false },
-                        modifier = Modifier.width(300.dp).heightIn(max = 400.dp)
+                        modifier = Modifier.width(300.dp).heightIn(max = 400.dp).background(MaterialTheme.colorScheme.surface)
                     ) {
                         if (notifications.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("Không có thông báo mới", color = Color.Gray) },
+                                text = { Text("Không có thông báo mới", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 onClick = { showNotificationMenu = false }
                             )
                         } else {
@@ -145,36 +165,42 @@ fun Narbar(
                                 DropdownMenuItem(
                                     text = {
                                         Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                            Text(text = notif.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text(text = notif.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                             Spacer(modifier = Modifier.height(2.dp))
-                                            Text(text = notif.message, fontSize = 13.sp, color = Color.DarkGray)
+                                            Text(text = notif.message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             Spacer(modifier = Modifier.height(4.dp))
-                                            Text(text = dateFormat.format(Date(notif.timestamp)), fontSize = 11.sp, color = Color.Gray)
+                                            Text(text = dateFormat.format(Date(notif.timestamp)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                                         }
                                     },
-                                    onClick = { showNotificationMenu = false }
+                                    onClick = {
+                                        showNotificationMenu = false
+                                        if (notif.bookId > 0L) {
+                                            navController?.navigate("book_detail/${notif.bookId}")
+                                        }
+                                    }
                                 )
-                                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                             }
                         }
                     }
                 }
 
-                // 👉 NÚT MENU 3 CHẤM (MORE)
                 Box {
                     IconButton(onClick = { showMoreMenu = !showMoreMenu }) {
                         Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Thêm")
                     }
+                    // 👉 Sửa màu nền Dropdown Menu Cài đặt
                     DropdownMenu(
                         expanded = showMoreMenu,
-                        onDismissRequest = { showMoreMenu = false }
+                        onDismissRequest = { showMoreMenu = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Cài đặt") },
-                            leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                            text = { Text("Cài đặt", color = MaterialTheme.colorScheme.onSurface) },
+                            leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             onClick = {
                                 showMoreMenu = false
-                                showThemeDialog = true // Mở popup cài đặt
+                                showThemeDialog = true
                             }
                         )
                     }
@@ -183,16 +209,17 @@ fun Narbar(
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         )
     }
 
-    // 👉 BẢNG DIALOG CÀI ĐẶT GIAO DIỆN
     if (showThemeDialog) {
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
-            title = { Text("Cài đặt giao diện", fontWeight = FontWeight.Bold) },
+            title = { Text("Cài đặt giao diện", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+            containerColor = MaterialTheme.colorScheme.surface,
             text = {
                 Column {
                     val themes = listOf(
@@ -208,7 +235,6 @@ fun Narbar(
                                 .clickable {
                                     selectedTheme = key
                                     prefs.edit().putString("theme_mode", key).apply()
-                                    // Bấm vào text cũng nhận chọn
                                 }
                                 .padding(vertical = 8.dp)
                         ) {
@@ -220,14 +246,14 @@ fun Narbar(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = label, fontSize = 16.sp)
+                            Text(text = label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Đóng", fontWeight = FontWeight.Bold)
+                    Text("Đóng", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             }
         )

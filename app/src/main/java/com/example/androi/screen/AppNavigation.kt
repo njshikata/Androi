@@ -3,6 +3,7 @@ package com.example.androi.screen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,21 +18,29 @@ import com.example.androi.screen.HomePage.Home.CateroryPage
 import com.example.androi.screen.HomePage.Home.Home_Screen
 import com.example.androi.screen.HomePage.Home.Caterory_Book.CategoryBook_Screen
 import com.example.androi.screen.HomePage.Home.DowLoadPage
+import com.example.androi.screen.HomePage.Home.LoginScreen
 import com.example.androi.screen.HomePage.NarBar_Footer_Card.footer.Footer
 
-// 👉 BẠN NHỚ IMPORT FILE CateroryPage VỪA TẠO VÀO NHÉ
-
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    startDestination: String = "home",
+    targetBookId: Long = -1L // 👉 THÊM THAM SỐ NHẬN ID TỪ MAIN
+) {
     val navController = rememberNavController()
 
+    // 👉 ĐÂY LÀ CHÌA KHÓA: Tự động nhảy sang trang truyện nếu có ID
+    LaunchedEffect(targetBookId) {
+        if (targetBookId != -1L) {
+            navController.navigate("book_detail/$targetBookId")
+        }
+    }
+
     Scaffold(
-        // 👉 TRUYỀN navController XUỐNG CHỖ NÀY
         bottomBar = { Footer(navController = navController) }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = startDestination, // Vẫn giữ gốc chuẩn để Footer không bị ngáo
             modifier = Modifier.padding(innerPadding)
         ) {
 
@@ -44,11 +53,18 @@ fun AppNavigation() {
             composable("category_page") {
                 CateroryPage(navController = navController)
             }
-            // 👉 THÊM ROUTE CHO TRANG TẢI VỀ Ở ĐÂY
+
+            // --- ROUTE TẢI VỀ & CÁ NHÂN ---
             composable("download_page") {
                 DowLoadPage(navController = navController)
             }
-            // --- ROUTE 2: TRANG CHI TIẾT THỂ LOẠI (Danh sách truyện của 1 thể loại) ---
+
+            // --- ROUTE ĐĂNG NHẬP / ĐĂNG KÝ ---
+            composable("login_screen") {
+                LoginScreen(navController = navController)
+            }
+
+            // --- ROUTE 2: TRANG CHI TIẾT THỂ LOẠI ---
             composable(
                 route = "category_book/{id}/{name}",
                 arguments = listOf(
@@ -83,12 +99,10 @@ fun AppNavigation() {
 
             // --- ROUTE 4: MÀN HÌNH ĐỌC TRUYỆN ---
             composable(
-                // 1. Thêm ?isOffline={isOffline} vào cuối route
                 route = "read_chapter/{bookId}/{chapterId}?isOffline={isOffline}",
                 arguments = listOf(
                     navArgument("bookId") { type = NavType.LongType },
                     navArgument("chapterId") { type = NavType.LongType },
-                    // 2. Khai báo thêm argument isOffline (mặc định là false)
                     navArgument("isOffline") {
                         type = NavType.BoolType
                         defaultValue = false
@@ -103,7 +117,7 @@ fun AppNavigation() {
                     navController = navController,
                     bookId = bookId,
                     initialChapterId = chapterId,
-                    isOffline = isOffline // 3. Truyền biến này vào UI
+                    isOffline = isOffline
                 )
             }
         }

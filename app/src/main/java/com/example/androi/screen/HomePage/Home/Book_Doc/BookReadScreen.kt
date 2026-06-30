@@ -113,7 +113,7 @@ fun BookReadScreen(
                 ChapterSummary(id = it.chapterId, title = it.title, isPremium = false, chapterIndex = index.toDouble())
             }
         } else {
-            api_tong.bookReadApi.getChapters(bookId).enqueue(object : Callback<List<ChapterSummary>> {
+            api_tong.getBookReadApi(context).getChapters(bookId).enqueue(object : Callback<List<ChapterSummary>> {
                 override fun onResponse(call: Call<List<ChapterSummary>>, response: Response<List<ChapterSummary>>) {
                     if (response.isSuccessful && response.body() != null) chapterList = response.body()!!
                 }
@@ -165,7 +165,7 @@ fun BookReadScreen(
                 }
             } else {
                 // TẢI TỪ MẠNG
-                api_tong.bookReadApi.readChapter(currentChapterId).enqueue(object : Callback<ChapterContent> {
+                api_tong.getBookReadApi(context).readChapter(currentChapterId).enqueue(object : Callback<ChapterContent> {
                     override fun onResponse(call: Call<ChapterContent>, response: Response<ChapterContent>) {
                         if (response.isSuccessful && response.body() != null) {
                             val content = response.body()!!
